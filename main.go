@@ -1,10 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/Old-Goggles/blog_aggregator/internal/config"
+	"github.com/Old-Goggles/blog_aggregator/internal/database"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -14,7 +18,15 @@ func main() {
 		return
 	}
 
+	db, err := sql.Open("postgres", cfg.DBURL)
+	if err != nil {
+		log.Fatalf("error connecting to db: %v", err)
+	}
+	defer db.Close()
+	dbQueries := database.New(db)
+
 	programState := &state{
+		Db:  dbQueries,
 		Cfg: &cfg,
 	}
 
@@ -23,6 +35,7 @@ func main() {
 	}
 
 	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
 
 	args := os.Args
 	if len(args) < 2 {
