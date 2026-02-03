@@ -120,3 +120,15 @@ func handlerUsers(s *state, cmd command) error {
 	}
 	return nil
 }
+
+func handlerAgg(s *state, cmd command) error {
+	ctx := context.Background()
+
+	result, err := fetchFeed(ctx, "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return fmt.Errorf("unable to fetch feed %v", err)
+	}
+
+	fmt.Printf("Feed: %+v\n", result)
+	return nil
+}
