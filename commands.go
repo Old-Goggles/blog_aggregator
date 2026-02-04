@@ -132,3 +132,33 @@ func handlerAgg(s *state, cmd command) error {
 	fmt.Printf("Feed: %+v\n", result)
 	return nil
 }
+
+func handlerAddFeed(s *state, cmd command) error {
+	ctx := context.Background()
+	if len(cmd.Args) != 2 {
+		return fmt.Errorf("name and url are required")
+	}
+
+	name := cmd.Args[0]
+	url := cmd.Args[1]
+	username := s.Cfg.CurrentUserName
+
+	user, err := s.Db.GetUser(ctx, username)
+	if err != nil {
+		return fmt.Errorf("error finding user in database %w", err)
+	}
+
+	params := database.CreateFeedParams{
+		Name:   name,
+		Url:    url,
+		UserID: user.ID,
+	}
+
+	feed, err := s.Db.CreateFeed(ctx, params)
+	if err != nil {
+		return fmt.Errorf("error creating feed %w", err)
+	}
+
+	fmt.Printf("Feed created: %+v\n", feed)
+	return nil
+}
