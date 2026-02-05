@@ -162,3 +162,20 @@ func handlerAddFeed(s *state, cmd command) error {
 	fmt.Printf("Feed created: %+v\n", feed)
 	return nil
 }
+
+func handlerFeeds(s *state, cmd command) error {
+	ctx := context.Background()
+	feeds, err := s.Db.GetAllFeeds(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting feeds %w", err)
+	}
+
+	for _, feed := range feeds {
+		user, err := s.Db.GetUserByID(ctx, feed.UserID)
+		if err != nil {
+			return fmt.Errorf("error gettig user by ID %w", err)
+		}
+		fmt.Printf("Name: %s\nURL: %s\nUser: %s\n\n", feed.Name, feed.Url, user.Name)
+	}
+	return nil
+}
