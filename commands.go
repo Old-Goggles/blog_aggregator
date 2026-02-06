@@ -159,7 +159,18 @@ func handlerAddFeed(s *state, cmd command) error {
 		return fmt.Errorf("error creating feed %w", err)
 	}
 
-	fmt.Printf("Feed created: %+v\n", feed)
+	follow_params := database.CreateFeedFollowParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	}
+
+	_, err = s.Db.CreateFeedFollow(ctx, follow_params)
+	if err != nil {
+		return fmt.Errorf("error creating feed follow")
+	}
+
+	fmt.Printf("feed created: %+v\n", feed)
+	fmt.Printf("automatically following as %s\n", username)
 	return nil
 }
 
@@ -173,9 +184,58 @@ func handlerFeeds(s *state, cmd command) error {
 	for _, feed := range feeds {
 		user, err := s.Db.GetUserByID(ctx, feed.UserID)
 		if err != nil {
-			return fmt.Errorf("error gettig user by ID %w", err)
+			return fmt.Errorf("error getting user by ID %w", err)
 		}
 		fmt.Printf("Name: %s\nURL: %s\nUser: %s\n\n", feed.Name, feed.Url, user.Name)
+	}
+	return nil
+}
+
+func handlerFollow(s *state, cmd command) error {
+	ctx := context.Background()
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("url is required")
+	}
+
+	url := cmd.Args[0]
+	username := s.Cfg.CurrentUserName
+	user, err := s.Db.GetUser(ctx, username)
+	if err != nil {
+		return fmt.Errorf("error finding user in database %w", err)
+	}
+
+	feed, err := s.Db.GetFeed(ctx, url)
+	if err != nil {
+		return fmt.Errorf("error getting feed %w", err)
+	}
+	params := database.CreateFeedFollowParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	}
+
+	followed, err := s.Db.CreateFeedFollow(ctx, params)
+	if err != nil {
+		return fmt.Errorf("error following feed %w", err)
+	}
+	fmt.Printf("%s is now following %s\n", followed.UserName, followed.FeedName)
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command) error {
+	ctx := context.Background()
+	username := s.Cfg.CurrentUserName
+	user, err := s.Db.GetUser(ctx, username)
+	if err != nil {
+		return fmt.Errorf("error finding user in database %w", err)
+	}
+
+	following, err := s.Db.GetFeedFollowsForUser(ctx, user.ID)
+	if err != nil {
+		return fmt.Errorf("error getting followed feeds %w", err)
+	}
+
+	for _, feed := range following {
+		fmt.Printf("%s\n", feed.FeedName)
 	}
 	return nil
 }
