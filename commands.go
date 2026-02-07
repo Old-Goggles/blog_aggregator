@@ -21,6 +21,18 @@ type command struct {
 	Args []string
 }
 
+func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
+	return func(s *state, cmd command) error {
+		ctx := context.Background()
+		username := s.Cfg.CurrentUserName
+		user, err := s.Db.GetUser(ctx, username)
+		if err != nil {
+			return fmt.Errorf("error finding user in database %w", err)
+		}
+		return handler(s, cmd, user)
+	}
+}
+
 func handlerLogin(s *state, cmd command) error {
 	if len(cmd.Args) == 0 {
 		return fmt.Errorf("username is required")
@@ -133,7 +145,7 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	ctx := context.Background()
 	if len(cmd.Args) != 2 {
 		return fmt.Errorf("name and url are required")
@@ -141,12 +153,6 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	name := cmd.Args[0]
 	url := cmd.Args[1]
-	username := s.Cfg.CurrentUserName
-
-	user, err := s.Db.GetUser(ctx, username)
-	if err != nil {
-		return fmt.Errorf("error finding user in database %w", err)
-	}
 
 	params := database.CreateFeedParams{
 		Name:   name,
@@ -170,7 +176,7 @@ func handlerAddFeed(s *state, cmd command) error {
 	}
 
 	fmt.Printf("feed created: %+v\n", feed)
-	fmt.Printf("automatically following as %s\n", username)
+	fmt.Printf("automatically following as %s\n", user.Name)
 	return nil
 }
 
@@ -191,19 +197,13 @@ func handlerFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	ctx := context.Background()
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("url is required")
 	}
 
 	url := cmd.Args[0]
-	username := s.Cfg.CurrentUserName
-	user, err := s.Db.GetUser(ctx, username)
-	if err != nil {
-		return fmt.Errorf("error finding user in database %w", err)
-	}
-
 	feed, err := s.Db.GetFeed(ctx, url)
 	if err != nil {
 		return fmt.Errorf("error getting feed %w", err)
@@ -221,13 +221,8 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
+func handlerFollowing(s *state, cmd command, user database.User) error {
 	ctx := context.Background()
-	username := s.Cfg.CurrentUserName
-	user, err := s.Db.GetUser(ctx, username)
-	if err != nil {
-		return fmt.Errorf("error finding user in database %w", err)
-	}
 
 	following, err := s.Db.GetFeedFollowsForUser(ctx, user.ID)
 	if err != nil {
