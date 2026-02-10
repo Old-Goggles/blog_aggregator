@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -63,5 +64,17 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+}
+
+func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
+	return func(s *state, cmd command) error {
+		ctx := context.Background()
+		username := s.Cfg.CurrentUserName
+		user, err := s.Db.GetUser(ctx, username)
+		if err != nil {
+			return fmt.Errorf("error finding user in database %w", err)
+		}
+		return handler(s, cmd, user)
 	}
 }
