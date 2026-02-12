@@ -1,0 +1,35 @@
+Attention, this blog aggregator was made for learning purposes. 
+It probably isn't your best option if your wanting to use this for real world use.
+
+
+gator – Blog Aggregator CLI
+
+A lightweight command-line tool written in Go that pulls RSS feeds from multiple sources, 
+stores them in PostgreSQL, and lets you browse aggregated posts.
+
+Requirements: Go and Postgres 
+
+go install github.com/Old-Goggles/blog_aggregator@latest
+
+Configuration
+Create a file named .gatorconfig.json in your home directory.
+macOS/Linux: ~/.gatorconfig.json
+Windows: $HOME.gatorconfig.json
+
+Example:
+{
+"db_url": "postgres://USERNAME:PASSWORD@localhost:5432/DBNAME?sslmode=disable"
+}
+
+Available Commands
+
+gator register <name>
+gator login <name>
+gator users
+gator addfeed <name> <url>
+gator feeds
+gator follow <url>
+gator unfollow <url>
+gator agg 30s
+gator browse [limit]
+
